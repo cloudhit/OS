@@ -1,0 +1,112 @@
+cmake_minimum_required (VERSION 2.8)
+project(assignment3 C)
+
+# set the directory where we want the final executables to be placed
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# compiler flags we wish to add
+SET(GCC_COVERAGE_COMPILE_FLAGS "-O2 -Wall -Wextra -Werror")
+SET( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}" )
+
+# find the needed libraries	
+find_package(Threads)
+find_library(M_LIB m)
+
+# add the first problem and specify what libraries we need to link
+add_executable(problem_1 problem_1.c)
+target_link_libraries (problem_1 ${CMAKE_THREAD_LIBS_INIT})
+
+# add the second problem and specify what libraries we need to link
+add_executable(problem_2 problem_2.c)
+target_link_libraries (problem_2 ${CMAKE_THREAD_LIBS_INIT})
+
+# add the third problem and specify what libraries we need to link
+add_executable(problem_3 problem_3.c)
+target_link_libraries (problem_3 ${CMAKE_THREAD_LIBS_INIT})
+
+# add the fourth problem and specify what libraries we need to link
+add_executable(problem_4 problem_4.c)
+target_link_libraries (problem_4 ${CMAKE_THREAD_LIBS_INIT})
+
+# add the fifth problem and specify what libraries we need to link
+add_executable(problem_5 problem_5.c)
+target_link_libraries (problem_5 ${CMAKE_THREAD_LIBS_INIT})
+
+# add the sixth problem and specify what libraries we need to link
+add_executable(problem_6 problem_6.c)
+target_link_libraries (problem_6 ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
+
+# below are a number of tests for the assignment
+# since Professor Regher didn't specify the format of the output
+# you will need to change the regex strings before they'll work for you
+
+# uncomment the following line to enable tests
+enable_testing()
+
+# find where taskset is located
+find_program(TASKSET taskset)
+
+# macro to test the comand line arguments of a problems 1-5
+macro(TEST_ARGUMENTS_FOR_PROBLEM number)
+	# make sure the problem fails when passed no arguments
+	add_test(Problem_${number}_No_Arguments ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/problem_${number})
+	set_tests_properties(Problem_${number}_No_Arguments
+		PROPERTIES
+		PASS_REGULAR_EXPRESSION "Usage:.*")
+
+	# make sure the problem fails when bad arguments are passed
+	add_test(Problem_${number}_Bad_Thread_Count ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/problem_${number} h 1)
+	set_tests_properties(Problem_${number}_Bad_Thread_Count
+		PROPERTIES
+		PASS_REGULAR_EXPRESSION "Thread count must be a positive integer.")
+
+	add_test(Problem_${number}_Bad_Thread_Duration ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/problem_${number} 1 h)
+	set_tests_properties(Problem_${number}_Bad_Thread_Duration
+		PROPERTIES
+		PASS_REGULAR_EXPRESSION "Thread duration must be a positive integer.")
+
+endmacro()
+
+# macro to test mutal exlusion, restriting to a single cpu
+# will run for 10 minutes
+macro(TEST_MUTAL_EXCLUSION_SINGLE_CPU_FOR_PROBLEM number)
+	if(TASKSET)
+		# make sure mutal exclusion holds
+		add_test(Problem_${number}_Mutal_Exclusion_Single_Cpu
+			${TASKSET} -c 1 ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/problem_${number} 10 600)
+		set_tests_properties(Problem_${number}_Mutal_Exclusion_Single_Cpu
+			PROPERTIES
+			PASS_REGULAR_EXPRESSION "Thread 0 ran the critical section [0-9]+ times."
+			TIMEOUT 630)
+	else(TASKSET)
+		message(WARNING "taskset not found: cannot perform single cpu tests for problem ${number}")
+	endif(TASKSET)	
+endmacro()
+
+# macro to test mutual exclusion using all the cpus on the machine
+# will run for 10 minutes
+macro(TEST_MUTAL_EXCLUSION_MULTIPLE_CPUS_FOR_PROBLEM number)
+	# make sure mutual exclusion holds
+	add_test(Problem_${number}_Mutal_Exclusion_Multiple_Cpus
+		${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/problem_${number} 10 600)
+	set_tests_properties(Problem_${number}_Mutal_Exclusion_Multiple_Cpus
+		PROPERTIES
+		PASS_REGULAR_EXPRESSION "Thread 0 ran the critical section [0-9]+ times."
+		TIMEOUT 630)
+endmacro()
+
+TEST_ARGUMENTS_FOR_PROBLEM(1)
+TEST_ARGUMENTS_FOR_PROBLEM(2)
+TEST_ARGUMENTS_FOR_PROBLEM(3)
+TEST_ARGUMENTS_FOR_PROBLEM(4)
+TEST_ARGUMENTS_FOR_PROBLEM(5)
+
+TEST_MUTAL_EXCLUSION_SINGLE_CPU_FOR_PROBLEM(1)
+TEST_MUTAL_EXCLUSION_SINGLE_CPU_FOR_PROBLEM(2)
+
+TEST_MUTAL_EXCLUSION_MULTIPLE_CPUS_FOR_PROBLEM(3)
+TEST_MUTAL_EXCLUSION_MULTIPLE_CPUS_FOR_PROBLEM(4)
+TEST_MUTAL_EXCLUSION_MULTIPLE_CPUS_FOR_PROBLEM(5)
+
+# problem 6 tests
+add_test(Problem6 ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/problem_6 5 100)

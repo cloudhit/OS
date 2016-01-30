@@ -1,0 +1,3 @@
+gcc -O2 -Wall -Wextra -Werror problem_6.c -o problem_6 -lm -pthread
+
+./problem_6 10 10
